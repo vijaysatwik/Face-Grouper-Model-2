@@ -1,0 +1,43 @@
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# IDE and operating system clutter
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Private dataset contents (keep the directory placeholder)
+/dataset/*
+!/dataset/.gitkeep
+
+# Locally generated models and embeddings
+*.pt
+*.pth
+*.onnx
+*.h5
+*.hdf5
+*.keras
+*.safetensors
+*.npy
+*.npz
+*.pkl
+*.pickle
