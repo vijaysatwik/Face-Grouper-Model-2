@@ -25,9 +25,12 @@ ENV/
 Thumbs.db
 Desktop.ini
 
-# Private dataset contents (keep the directory placeholder)
+# Private dataset contents (keep identity folders and their placeholders)
 /dataset/*
 !/dataset/.gitkeep
+!/dataset/*/
+/dataset/*/*
+!/dataset/*/.gitkeep
 
 # Locally generated models and embeddings
 *.pt
