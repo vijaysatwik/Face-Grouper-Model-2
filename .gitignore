@@ -25,12 +25,37 @@ ENV/
 Thumbs.db
 Desktop.ini
 
-# Private dataset contents (keep identity folders and their placeholders)
+# Private source photos and generated processed images. Keep placeholder files.
 /dataset/*
 !/dataset/.gitkeep
 !/dataset/*/
 /dataset/*/*
 !/dataset/*/.gitkeep
+!/dataset/processed/
+/dataset/processed/**
+!/dataset/processed/*/
+!/dataset/processed/*/.gitkeep
+
+# Private original and processed face images
+/dataset/**/*.jpg
+/dataset/**/*.jpeg
+/dataset/**/*.png
+/dataset/**/*.webp
+/dataset/**/*.bmp
+/dataset/**/*.tif
+/dataset/**/*.tiff
+/dataset/**/*.heic
+
+# Private biometric data and generated artifacts
+/dataset/**/*.npy
+/dataset/**/*.npz
+/dataset/**/*.pkl
+/dataset/**/*.pickle
+/dataset/**/*.pt
+/dataset/**/*.pth
+
+# Local diagnostic reports and contact sheets
+/reports/
 
 # Locally generated models and embeddings
 *.pt
