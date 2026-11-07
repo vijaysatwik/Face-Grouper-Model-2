@@ -21,6 +21,29 @@ The project will be built incrementally: establish the repository, add and valid
 
 Keep private photographs, identity data, credentials, model weights, and generated embeddings out of Git. See `.gitignore` for local exclusions.
 
+## Day 6: local FaceNet embeddings
+
+`src/extract_embeddings.py` extracts one 512-number embedding per reviewed 160x160 crop using the `facenet-pytorch` InceptionResnetV1 model pretrained on VGGFace2. It reads only direct image files inside `dataset/processed/<identity>/`, processes them locally, and writes a compressed `.npz` matrix plus a JSON index under `artifacts/embeddings/`. These are private biometric data and are ignored by Git.
+
+The audit is printed as an informational note and does not block extraction. The script reads only processed image files that exist, so missing crops are naturally skipped. Review the contact sheets and keep known non-face images out of `dataset/processed/<identity>/` before running; the two previously incorrect crops were manually replaced from their original photos. Other dataset concerns remain documented in the Day 5 audit.
+
+The script also requires the VGGFace2 weight file in the PyTorch cache. `facenet-pytorch` can download weights automatically, so this script avoids that behavior and loads only an existing local file. The expected filename is `20180402-114759-vggface2.pt` under `%USERPROFILE%\.cache\torch\checkpoints\` by default (or `%TORCH_HOME%\checkpoints\` when `TORCH_HOME` is set). The official file is about 107 MB. Do not download it without approval; if authorized, use the official [facenet-pytorch VGGFace2 release](https://github.com/timesler/facenet-pytorch/releases/download/v2.2.9/20180402-114759-vggface2.pt).
+
+The current computer uses Python 3.13. The pinned `facenet-pytorch` 2.6.0 release requires PyTorch 2.2.x and torchvision 0.17.x, while the official Windows PyTorch setup page currently documents Python 3.9–3.12. Create a separate Python 3.11 environment before installing dependencies; do not use Python 3.13 for this pinned stack.
+
+After the compatible environment is set up, run these commands from the repository root:
+
+```powershell
+$python311 = Join-Path $env:LOCALAPPDATA 'Programs\Python\Python311\python.exe'
+& $python311 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install torch==2.2.2 torchvision==0.17.2 --index-url https://download.pytorch.org/whl/cpu
+python -m pip install -r requirements.txt
+python src/extract_embeddings.py
+```
+
+Package installation and model-weight setup are manual. The program does not download model weights, and it never changes the source or processed photographs. Each run uses new output filenames so existing embeddings are preserved.
+
 ## Private dataset and preprocessing
 
 Place original photographs directly in the matching identity folder:

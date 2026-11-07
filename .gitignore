@@ -58,6 +58,7 @@ Desktop.ini
 /reports/
 
 # Locally generated models and embeddings
+/artifacts/embeddings/
 *.pt
 *.pth
 *.onnx
