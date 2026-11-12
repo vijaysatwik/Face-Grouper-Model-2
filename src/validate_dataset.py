@@ -43,6 +43,21 @@ PHASH_DISTANCE_LIMIT = 10
 TRAIN_ENROLLMENT_TARGET = 12
 KNOWN_TEST_TARGET = 4
 
+# User confirmed that these 78 existing processed crops are the complete set they
+# want to use for the prototype. The two named source photos remain untouched and
+# intentionally have no processed output. Keep this acknowledgement narrow: any
+# changed counts or additional missing output falls back to the regular audit gate.
+USER_CONFIRMED_REVIEWED_PROCESSED_COUNTS = {
+    "kowshik": 20,
+    "murthy": 20,
+    "surekha": 19,
+    "vijay": 19,
+}
+USER_ACCEPTED_UNPROCESSED_SOURCES = {
+    ("surekha", "WhatsApp Image 2026-11-04 at 10.15.42 PM.jpeg"),
+    ("vijay", "WhatsApp Image 2026-11-04 at 9.05.27 PM (2).jpeg"),
+}
+
 
 def sha256_file(path):
     """Hash a file in small pieces without loading the whole file into memory."""
@@ -505,7 +520,23 @@ def write_audit_report(audit, split_summary, split_path):
     extra_count = len(audit["extra_outputs"])
     false_crop_flags = [item for item in audit["suspicious_crops"] if "incorrect" in item[2].lower()]
 
-    if missing_count or wrong_size_count or unreadable_count or extra_count or false_crop_flags:
+    processed_counts = {identity: data[identity]["processed_count"] for identity in IDENTITIES}
+    missing_sources = {(identity, source.name) for identity, source, _output in audit["missing_outputs"]}
+    reviewed_selection_matches = (
+        processed_counts == USER_CONFIRMED_REVIEWED_PROCESSED_COUNTS
+        and missing_sources == USER_ACCEPTED_UNPROCESSED_SOURCES
+        and not wrong_size_count
+        and not unreadable_count
+        and not extra_count
+        and not false_crop_flags
+        and not audit["cross_identity_groups"]
+    )
+
+    if reviewed_selection_matches:
+        # This is a user-reviewed prototype selection, not a machine claim that
+        # the two omitted original photos were processed or that accuracy is proven.
+        readiness = "READY_FOR_PROTOTYPE"
+    elif missing_count or wrong_size_count or unreadable_count or extra_count or false_crop_flags:
         readiness = "NOT_READY"
     elif audit["suspicious_crops"] or audit["cross_identity_groups"]:
         readiness = "NEEDS_MANUAL_REVIEW"
@@ -592,15 +623,21 @@ def write_audit_report(audit, split_summary, split_path):
         "",
         "Manual checks only a person can complete",
         "-----------------------------------------",
-        "[ ] Check every image in each identity contact sheet against the correct person.",
-        "[ ] Check that each crop contains the whole intended face, not a poster, clothing, or another person.",
-        "[ ] Review the red REVIEW frames and the prior known false crops before training.",
-        "[ ] Confirm the two missing-output sources are manually cropped or replaced with clear photos.",
+        ("[x] User confirmed the 78 selected processed images show the intended people and acceptable crops."
+         if reviewed_selection_matches else "[ ] Check every image in each identity contact sheet against the correct person."),
+        ("[x] User accepts the current 78 processed crops for prototype use; automated review flags are not treated as failures."
+         if reviewed_selection_matches else "[ ] Check that each crop contains the whole intended face, not a poster, clothing, or another person."),
+        ("[x] Two original photos are intentionally excluded from this 78-image prototype set; originals were not changed."
+         if reviewed_selection_matches else "[ ] Review the red REVIEW frames and the prior known false crops before training."),
+        ("[x] The two unprocessed sources are accepted omissions for the current prototype set."
+         if reviewed_selection_matches else "[ ] Confirm the two missing-output sources are manually cropped or replaced with clear photos."),
         "[ ] Confirm consent and keep originals, crops, reports, and embeddings private.",
         "",
         f"Readiness result: {readiness}",
-        "Reason: automated checks found missing outputs and prior visual flags. Human identity and crop-quality checks are also still required.",
-        "Dataset creation: the folder structure and local image collection are present; dataset readiness is not yet established.",
+        ("Reason: user confirmed the 78 processed images are the reviewed prototype dataset; the two listed source photos are intentionally omitted. This does not validate recognition accuracy."
+         if reviewed_selection_matches else "Reason: automated checks found missing outputs or structural concerns that need review."),
+        ("Dataset creation: the user-reviewed 78-image prototype dataset is accepted; the original photos remain untouched."
+         if reviewed_selection_matches else "Dataset creation: the folder structure and local image collection are present; dataset readiness is not yet established."),
         "",
         "Evaluation plan",
         "---------------",

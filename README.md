@@ -89,3 +89,59 @@ python src/match_faces.py --query-image "C:\path\to\a\new_160x160_face_crop.jpg"
 ```
 
 This reuses the Day 6 model loading and RGB/[-1, 1] preprocessing. It loads weights only from the local PyTorch cache and does not download them. Query-image mode returns candidates only; use the no-argument command for the leakage-checked evaluation. Keep query images, metadata, and embedding files private and out of Git.
+
+## Day 8: unknown-person threshold (data collection still required)
+
+The Day 7 matcher ranks candidates but does not decide whether to accept one. Day 8 adds FAR/FRR threshold calculation logic and a local recognition command. There is intentionally no built-in threshold: an acceptance decision must wait until independent calibration examples have been collected and reviewed.
+
+You confirmed the 78 currently processed images are acceptable for prototype use. The Day 5 audit now records that user review and treats the two unprocessed originals as intentionally omitted from this 78-image set; the originals remain untouched. This does not prove recognition accuracy. Keep all Day 7 known-test photos reserved for their original evaluation.
+
+The current small demonstration uses five photos of one unknown person for calibration and five photos of a different unknown person for final testing. For a more reliable future estimate, add more people; five distinct people per partition is a better starting point. In all cases, the people in the calibration and final-test groups must be different from each other and from Kowshik, Murthy, Surekha, and Vijay. Use new photos dedicated to Day 8; do not reuse photos already used for enrollment, Day 7 testing, or calibration in the final test.
+
+In File Explorer, open the project folder, then `dataset`, then the folder named below for each person. For example, put the five calibration photos for the first person in `dataset\unknown_calibration\unknown_01\`.
+
+```text
+dataset/
+  unknown_calibration/
+    unknown_01/  # five photos of unknown person 1
+    unknown_02/  # five photos of a different person
+    unknown_03/
+    unknown_04/
+    unknown_05/
+  unknown_test/
+    unknown_06/  # five photos of a new person, not in calibration
+    unknown_07/  # five photos of another new person
+    unknown_08/
+    unknown_09/
+    unknown_10/
+```
+
+The exact folder names are local labels; they do not identify the real people. Empty placeholder folders can be left unused. The folders contain `.gitkeep` files, but private photos are ignored by Git and should stay on your computer. Keep each person's five photos together in that person's folder.
+
+For Vijay, put one new calibration photo in `dataset\known_calibration\vijay\` and one different final-test photo in `dataset\known_test\vijay\`. Do not reuse Day 7 evaluation photos. The unused Day 7 reserve photos supply one calibration and one final-test query for Kowshik, Murthy, and Surekha.
+
+The known-person folders are separate:
+
+```text
+dataset/
+  known_calibration/<identity>/
+  known_test/<identity>/
+```
+
+Do not place unknown-person photos in the four known identity folders. The Day 7 split has 2 Kowshik, 3 Murthy, 2 Surekha and 0 Vijay unused known photos. At minimum, two new Vijay photos are needed for separate known calibration and final test. Five distinct unknown people in each role is a small starting point; more people and photos make the test more informative.
+
+All photos and generated biometric files must stay local. `.gitignore` excludes the Day 8 data folders and `artifacts/threshold/`. Check `git status --short` and `git check-ignore -v <private-file>` before any Git operation.
+
+The calibration command detects exactly one face per usable image, creates embeddings locally with the cached FaceNet model, selects a threshold using calibration examples only, then checks it on the separate final-test examples. Day 8 recognition and calibration use the single closest enrollment reference (`top_k=1`); the saved threshold metadata ensures both commands use the same setting. It tries OpenCV's bundled frontal cascades when the first detector misses a face. Unreadable images, images with no detected face, and ambiguous multi-face images are skipped with a reason; each subject must still have at least one usable image. It does not overwrite photos or existing threshold/report files. Five unknown photos per partition are enough to exercise the pipeline, but because each partition currently has only one person, the FAR estimate is very uncertain. For an early conservative demonstration, ask for zero false accepts among the calibration photos:
+
+```powershell
+.\.venv\Scripts\python.exe src\calibrate_threshold.py --target-far 0.0
+```
+
+After independent calibration data is available and threshold metadata has been created, classify a local image containing exactly one detectable face:
+
+```powershell
+.\.venv\Scripts\python.exe src\recognize_face.py --image "C:\path\to\new_face.jpg"
+```
+
+Recognition stops if there is no calibrated threshold, the image is unreadable, or face detection is zero or ambiguous. It uses the locally cached FaceNet weights and does not download them. Run synthetic logic checks with `.\.venv\Scripts\python.exe -m unittest discover -s tests -v`; those checks do not establish real-world recognition accuracy.

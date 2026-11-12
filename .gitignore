@@ -59,6 +59,7 @@ Desktop.ini
 
 # Locally generated models and embeddings
 /artifacts/embeddings/
+/artifacts/threshold/
 *.pt
 *.pth
 *.onnx
@@ -70,3 +71,9 @@ Desktop.ini
 *.npz
 *.pkl
 *.pickle
+
+# Day 8 calibration and final-test photographs are private identity data.
+/dataset/known_calibration/
+/dataset/known_test/
+/dataset/unknown_calibration/
+/dataset/unknown_test/
